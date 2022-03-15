@@ -1396,6 +1396,28 @@ class Vad(torch.nn.Module):
             lp_lifter_freq=self.lp_lifter_freq,
         )
 
+class PadTrim(torch.jit.ScriptModule):
+    r"""Pad/Trim a 2D tensor
+    Args:
+        max_len (int): Length to which the waveform will be padded
+        fill_value (float): Value to fill in
+    """
+    __constants__ = ['max_len', 'fill_value']
+
+    def __init__(self, max_len, fill_value=0.):
+        super(PadTrim, self).__init__()
+        self.max_len = max_len
+        self.fill_value = fill_value
+
+    @torch.jit.script_method
+    def forward(self, waveform):
+        r"""
+        Args:
+            waveform (torch.Tensor): Tensor of audio of size (c, n)
+        Returns:
+            Tensor: Tensor of size (c, `max_len`)
+        """
+        return F.pad_trim(waveform, self.max_len, self.fill_value)
 
 class SpectralCentroid(torch.nn.Module):
     r"""Compute the spectral centroid for each channel along the time axis.
