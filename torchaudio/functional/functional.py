@@ -43,6 +43,7 @@ __all__ = [
     "rtf_evd",
     "rtf_power",
     "apply_beamforming",
+    "pad_trim",
 ]
 
 
@@ -306,6 +307,24 @@ def griffinlim(
 
     return waveform
 
+@torch.jit.script
+def pad_trim(waveform, max_len, fill_value):
+    # type: (Tensor, int, float) -> Tensor
+    r"""Pad/trim a 2D tensor
+    Args:
+        waveform (torch.Tensor): Tensor of audio of size (c, n)
+        max_len (int): Length to which the waveform will be padded
+        fill_value (float): Value to fill in
+    Returns:
+        torch.Tensor: Padded/trimmed tensor
+    """
+    n = waveform.size(1)
+    if max_len > n:
+        # TODO add "with torch.no_grad():" back when JIT supports it
+        waveform = torch.nn.functional.pad(waveform, (0, max_len - n), 'constant', fill_value)
+    else:
+        waveform = waveform[:, :max_len]
+    return waveform
 
 def amplitude_to_DB(
     x: Tensor, multiplier: float, amin: float, db_multiplier: float, top_db: Optional[float] = None
